@@ -43,7 +43,7 @@ st.markdown("---")
 
 # 3. 填入你專屬的試算表身分證代碼
 SHEET_ID = "1eERvp1bG9xnhg-Tx2uVqalrCVsTHW2DeZWHwcSrOyoE"
-CSV_URL = f"https://docs.google.com/spreadsheets/d/{1eERvp1bG9xnhg-Tx2uVqalrCVsTHW2DeZWHwcSrOyoE}/gviz/tq?tqx=out:csv"
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
 # 嘗試讀取雲端資料庫
 try:
