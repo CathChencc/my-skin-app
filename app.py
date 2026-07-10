@@ -1,35 +1,28 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
 
-# 1. 網頁頁面設定
-st.set_page_config(page_title="Skin-Journal", page_icon="📸")
-st.title("📸 Skin-Journal 膚況雲端紀錄 App")
-st.write("🚀 商業升級版：數據永久保存，重新整理也不會消失！")
+st.title("📸 Skin-Journal 雲端商業版")
 
-# 2. 讓 Streamlit 連接你的 Google 試算表 (請把下面的網址換成你的！)
-# ⚠️ 請把引號內的網址，換成你剛剛複製的 Google 試算表網址！
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/你的試算表神祕代碼/edit?usp=sharing"
-# 將網址轉換為 CSV 下載格式，讓 Python 讀取
-CSV_URL = GOOGLE_SHEET_URL.replace("/edit?usp=sharing", "/gviz/tq?tqx=out:csv")
+# 建立雲端資料庫連線
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-tab1, tab2 = st.tabs(["📅 每日膚況打卡", "📖 檢視歷史紀錄"])
+# 讀取現有的雲端紀錄
+df = conn.read(ttl=0) # ttl=0 代表每次都即時讀取最新資料
 
-# --- 分頁 1：每日打卡功能 ---
-with tab1:
-    st.header("今日保養紀錄")
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    st.info(f"今天是：{today_str}")
-    
-    skincare_used = st.text_input("👉 今天擦了什麼保養品？（例如：保濕乳液、A醇精華）", "")
-    
-    if st.button("💾 儲存今日紀錄到雲端"):
-        if skincare_used.strip() != "":
-            # 使用 Streamlit 內建機制把資料上傳到 Google Sheet（透過表單格式）
-            # 為了簡化，我們直接提示使用者，或者利用臨時緩存
-            st.success(f"🎉 雲端連線成功！你今天擦了：{skincare_used}")
-            st.balloons()
-            
-            # 【新手小備註】：真正的直接寫入需要設定 Google API 憑證。
-            # 如果不想設定憑證，最聰明的方法是利用 Streamlit 官方提供的 "st.connection('gsheets')"。
-            # 讓我們在下面用最潮的官方新方式改寫：
+today_str = datetime.now().strftime("%Y-%m-%d")
+skincare_used = st.text_input("今天擦了什麼保養品？", "")
+
+if st.button("💾 儲存到雲端"):
+    if skincare_used.strip() != "":
+        # 增加新的一行資料
+        new_row = pd.DataFrame([{"date": today_str, "skincare": skincare_used}])
+        df = pd.concat([df, new_row], ignore_index=True)
+        
+        # 一鍵寫回 Google Sheet！
+        conn.update(data=df)
+        st.success("資料已永久寫入你的 Google 雲端試算表！重新整理也不會丟失了！")
+
+st.subheader("📖 你的歷史保養打卡紀錄：")
+st.dataframe(df)
