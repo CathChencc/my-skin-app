@@ -3,17 +3,17 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
 
+st.set_page_config(page_title="Skin-Journal", page_icon="📸")
 st.title("📸 Skin-Journal 雲端商業版")
 
 # 建立雲端資料庫連線
-# 修改成這樣：
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # 讀取現有的雲端紀錄
-df = conn.read(ttl=0) # ttl=0 代表每次都即時讀取最新資料
+df = conn.read(ttl=0) 
 
 today_str = datetime.now().strftime("%Y-%m-%d")
-skincare_used = st.text_input("今天擦了什麼保養品？", "")
+skincare_used = st.text_input("今天擦了什麼保養品？（例如：保濕乳液、A醇精華）", "")
 
 if st.button("💾 儲存到雲端"):
     if skincare_used.strip() != "":
