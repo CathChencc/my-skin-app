@@ -6,6 +6,7 @@ from datetime import datetime
 st.title("📸 Skin-Journal 雲端商業版")
 
 # 建立雲端資料庫連線
+# 修改成這樣：
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # 讀取現有的雲端紀錄
