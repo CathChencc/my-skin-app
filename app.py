@@ -9,7 +9,7 @@ st.title("Skin-Journal Cloud App")
 SHEET_ID = "把你的試算表身分證代碼貼在這裡"
 
 # 這是萬能轉化網址，能繞過所有外掛，直接把 Excel 轉成最純淨的英文數據流
-CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
 # 嘗試讀取雲端資料
 try:
