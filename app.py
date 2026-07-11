@@ -12,7 +12,7 @@ st.set_page_config(page_title="Skin-Journal", page_icon="✨", layout="centered"
 # 2. 雲端資料庫設定區域 (填入你自己的資訊)
 SHEET_ID = "1eERvp1bG9xnhg-Tx2uVqalrCVsTHW2DeZWHwcSrOyoE"
 # ⚠️ 注意：因為表單連過去後會變成第二個分頁，格式改成讀取「表單回覆 1」
-CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=表單回覆 1"
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=985156230"
 
 # ⚠️ 請把下面這行換成你剛剛建立的 Google 表單網址 (結尾改成 /formResponse)
 FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf2jXtbtY0P3UMdBOVyzxdp8xZg9JkGyzKAhO5ZIi0iI97NvA/formResponse"
