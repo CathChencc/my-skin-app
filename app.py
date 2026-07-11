@@ -18,93 +18,109 @@ CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:cs
 IMAGE_DIR = "skin_photos"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
-# 3. Try to read cloud database (for text history)
+# 3. Try to read cloud database
 try:
     df = pd.read_csv(CSV_URL)
+    # Ensure columns exist if sheet is fresh
+    if "username" not in df.columns:
+        df["username"] = "guest"
 except Exception as e:
-    df = pd.DataFrame(columns=["date", "skincare"])
+    df = pd.DataFrame(columns=["date", "skincare", "username"])
 
 st.title("✨ Skin-Journal")
-st.subheader("Your Cloud-Backed Skincare & Time-lapse Tracker")
+st.subheader("Multi-Device Cloud Sync Version")
 st.markdown("---")
 
-# 4. Create App Tabs
+# 👤 核心功能：左側側邊欄——使用者登入系統
+with st.sidebar:
+    st.header("👤 User Account")
+    user_input = st.text_input("Enter your username to login/sync:", "guest").strip()
+    
+    if user_input == "" or user_input == "guest":
+        st.warning("Currently viewing as: Guest")
+    else:
+        st.success(f"Logged in as: {user_input}")
+    
+    st.markdown("""
+    💡 **How Multi-Device Sync Works:**
+    Type the exact same username on your computer, phone, or tablet to access your identical skincare history instantly!
+    """)
+
+# 4. Filter data based on logged-in user
+user_df = df[df["username"] == user_input]
+
+# 5. Create App Tabs
 tab1, tab2, tab3 = st.tabs(["✍️ Daily Log", "📊 History Insights", "🎬 Monthly Time-lapse"])
 
-# --- TAB 1: Daily Log (文字上雲端，照片存本地) ---
+# --- TAB 1: Daily Log (寫入時自動綁定當前帳號) ---
 with tab1:
-    st.header("Today's Record")
+    st.header(f"Record for [{user_input}]")
     today_str = datetime.now().strftime("%Y-%m-%d")
     st.info(f"Today is: {today_str}")
     
-    # Upload photo block
     uploaded_file = st.file_uploader("📸 Snap your skin condition today", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         st.image(uploaded_file, caption="Today's Snapshot", width=300)
         
-    # Skincare routine input
     skincare_used = st.text_area(
         "🧴 What skincare routine did you use today?", 
         placeholder="e.g., Retinol, Hyaluronic Acid, Vitamin C..."
     )
     
-    # Save button
     if st.button("🚀 Save to Cloud Database"):
         if skincare_used.strip() != "":
-            # Save Text to cloud logic hint
-            new_row = pd.DataFrame([{"date": today_str, "skincare": skincare_used}])
+            # 關鍵：將 date, skincare, username 三合一打包
+            new_row = pd.DataFrame([{"date": today_str, "skincare": skincare_used, "username": user_input}])
             df = pd.concat([df, new_row], ignore_index=True)
             
-            # Save Image to local folder for Time-lapse video
+            # Save Image to local folder prefixed with username for isolation
             if uploaded_file is not None:
                 img = Image.open(uploaded_file)
-                img_path = os.path.join(IMAGE_DIR, f"{today_str}.jpg")
+                img_path = os.path.join(IMAGE_DIR, f"{user_input}_{today_str}.jpg")
                 img.save(img_path)
             
-            st.success("🎉 Success! Text synced to Google Sheet, and photo cached for your video!")
+            st.success(f"🎉 Saved successfully! Automatically linked to account: {user_input}")
             st.balloons()
             st.dataframe(new_row)
         else:
             st.error("⚠️ Please fill in your skincare products before saving.")
 
-# --- TAB 2: History Table (文字歷史紀錄) ---
+# --- TAB 2: History Table (只顯示該登入帳號的數據) ---
 with tab2:
-    st.header("📈 Skincare Journey Timeline")
-    if df.empty:
-        st.info("No logs found yet. Start your first entry in the Daily Log!")
+    st.header(f"📊 {user_input}'s Skincare Timeline")
+    
+    if user_df.empty:
+        st.info(f"No logs found for user '{user_input}'. Start logging today!")
     else:
         st.dataframe(
-            df.sort_values(by="date", ascending=False), 
+            user_df.sort_values(by="date", ascending=False), 
             use_container_width=True,
             hide_index=True
         )
-        total_days = len(df['date'].unique())
+        total_days = len(user_df['date'].unique())
         st.metric(label="Total Days Logged", value=f"{total_days} Days")
 
-# --- TAB 3: Monthly Time-lapse (重磅回歸！月底縮時影片生成) ---
+# --- TAB 3: Monthly Time-lapse (只讀取該帳號的照片生成縮時) ---
 with tab3:
     st.header("🎬 Generate Monthly Evolution Video")
-    st.write("We will compile all your cached daily photos into a seamless time-lapse video!")
+    st.write(f"Compiling cached daily photos for account: **{user_input}**")
     
     if st.button("🚀 Generate Time-lapse Video"):
-        # Fetch all saved photos
-        photo_files = sorted([f for f in os.listdir(IMAGE_DIR) if f.endswith(".jpg")])
+        # Fetch photos that match the current user's prefix
+        photo_files = sorted([f for f in os.listdir(IMAGE_DIR) if f.startswith(f"{user_input}_") and f.endswith(".jpg")])
         
         if len(photo_files) < 2:
-            st.warning("提示：目前本地儲存的照片太少（小於 2 張），多記錄幾天再來生成影片吧！")
+            st.warning(f"提示：帳號【{user_input}】儲存的照片太少（小於 2 張），多記錄幾天再來生成影片吧！")
         else:
-            output_video_path = "skin_evolution.mp4"
+            output_video_path = f"{user_input}_skin_evolution.mp4"
             
-            # Read first image to set dimensions
             first_img_path = os.path.join(IMAGE_DIR, photo_files[0])
             first_img = cv2.imread(first_img_path)
             height, width, layers = first_img.shape
             
-            # Video Writer Config (2 frames per second)
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             video = cv2.VideoWriter(output_video_path, fourcc, 2, (width, height))
             
-            # Resize and write each photo into the video
             for photo in photo_files:
                 img_path = os.path.join(IMAGE_DIR, photo)
                 img = cv2.imread(img_path)
@@ -114,7 +130,6 @@ with tab3:
             video.release()
             st.success("✨ Your monthly skin evolution video is ready!")
             
-            # Play video inside Streamlit app
             with open(output_video_path, 'rb') as video_file:
                 video_bytes = video_file.read()
                 st.video(video_bytes)
