@@ -46,8 +46,18 @@ with st.sidebar:
 
 # 過濾出當前登入帳號的專屬歷史紀錄
 # 由於表單名稱可能大小寫有差，這邊做個防呆
-if not df.empty and "username" in df.columns:
-    user_df = df[df["username"].astype(str) == str(user_input)]
+if not df.empty:
+    # 手動把試算表的所有欄位名稱都把空格去掉、變小寫
+    df.columns = [str(c).strip().lower() for c in df.columns]
+
+    # 尋找有沒有包含 username 的欄位（不管 Google 怎麼加字都能抓到）
+    user_col = [c for c in df.columns if "username" in c]
+
+    if user_col:
+        # 將試算表內容與使用者輸入通通「去空格、變小寫」來做完美比對！
+        user_df = df[df[user_col[0]].astype(str).str.strip().str.lower() == str(user_input).strip().lower()]
+    else:
+        user_df = pd.DataFrame(columns=["date", "skincare", "username"])
 else:
     user_df = pd.DataFrame(columns=["date", "skincare", "username"])
 
